@@ -5,7 +5,7 @@ Script to test the "http signature" authentication type to authorise its clients
 ## Table of contents:
 * Requirements
 * Generate JAR
-*Run script
+* Run script
 
 ### Requirements:
 
