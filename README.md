@@ -1,4 +1,4 @@
-# Satispay-script
+# Satiscript
 
 Script to test the "http signature" authentication type to authorise its clients.
 
@@ -21,7 +21,7 @@ $ mvn clean package
 or
 ```
 $ ./mvnw clean package
-```
+``
 
 (There isn't a test suite. TODO Add)
 
