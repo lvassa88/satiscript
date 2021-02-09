@@ -1,6 +1,7 @@
 package com.vassa.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.hash.Hashing;
 import com.vassa.security.RequestSigner;
 import com.vassa.util.PrivateKeyUtil;
 import org.apache.http.HttpResponse;
@@ -16,6 +17,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.spec.InvalidKeySpecException;
@@ -27,9 +30,9 @@ public class ApiClient {
     public static final String AUTHENTICATION_KEY_ROLE_PUBLIC = "PUBLIC";
     public static final String FORBIDDEN_ERR_MESSAGE = "The signature string is malformed or the key-id is wrong";
     public static final String PUBLIC_ROLE_ERR_MESSAGE = "the key-id was recognized but the signature is wrong.";
+    public static final String DIGEST = "digest";
     private final String endpoint;
-    private final String keyId;
-    private PrivateKey privateKey;
+    private final RequestSigner signer;
 
     public ApiClient(final String endpoint, final String keyId, final String pathFile)
             throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
@@ -37,8 +40,8 @@ public class ApiClient {
         checkKeyId(keyId);
         checkFileExists(pathFile);
         this.endpoint = endpoint;
-        this.keyId = keyId;
-        this.privateKey = PrivateKeyUtil.loadPrivateKey(pathFile);
+        PrivateKey privateKey = PrivateKeyUtil.loadPrivateKey(pathFile);
+        this.signer = new RequestSigner(keyId, privateKey);
     }
 
     private void checkKeyId(String keyId) {
@@ -58,39 +61,37 @@ public class ApiClient {
         new URL(endpoint).openStream().close();
     }
 
-    public void getMethod() {
-        RequestSigner signer = new RequestSigner(keyId, privateKey, HttpMethod.GET.name().toLowerCase());
+    public void getMethod(String payload) {
         HttpRequestBase request = new HttpGet(endpoint);
+        request.setHeader(DIGEST, generateDigest(payload));
         signer.signRequest(request);
         call(request);
     }
 
     public void postMethod(String payload) {
-        RequestSigner signer = new RequestSigner(keyId, privateKey, HttpMethod.POST.name().toLowerCase());
         HttpRequestBase request = new HttpPost(endpoint);
+        request.setHeader(DIGEST, generateDigest(payload));
         request.setHeader("Content-Type", "application/json");
-        signer.signRequest(request);
         ((HttpPost) request).setEntity(convert(payload));
         call(request);
     }
 
-    public void putMethod(String payload) throws UnsupportedEncodingException {
-        RequestSigner signer = new RequestSigner(keyId, privateKey, HttpMethod.PUT.name().toLowerCase());
+    public void putMethod(String payload) {
         HttpRequestBase request = new HttpPut(endpoint);
+        request.setHeader(DIGEST, generateDigest(payload));
         request.setHeader("Content-Type", "application/json");
-        signer.signRequest(request);
         ((HttpPut) request).setEntity(convert(payload));
         call(request);
     }
 
-    public void deleteMethod() {
-        RequestSigner signer = new RequestSigner(keyId, privateKey, HttpMethod.DELETE.name().toLowerCase());
+    public void deleteMethod(String payload) {
         HttpRequestBase request = new HttpDelete(endpoint);
-        signer.signRequest(request);
+        request.setHeader(DIGEST, generateDigest(payload));
         call(request);
     }
 
     private void call(final HttpRequestBase request) {
+        signer.signRequest(request);
         try (CloseableHttpClient httpClient = HttpClientBuilder.create().build()) {
             HttpResponse response = httpClient.execute(request);
             if (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
@@ -120,6 +121,11 @@ public class ApiClient {
             throw new RuntimeException("Not supported payload: " + payload + "\n Error: " + e);
         }
     }
+
+    private String generateDigest(final String msg) {
+        return Hashing.sha256().hashString(msg, StandardCharsets.UTF_8).toString();
+    }
+
 
     private boolean isAuthenticationRolePublic(final String resp) {
         List<String> attributeJson = Arrays.asList("authentication_key", "role");

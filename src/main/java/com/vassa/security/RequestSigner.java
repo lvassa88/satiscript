@@ -4,52 +4,31 @@ import org.apache.http.client.methods.HttpRequestBase;
 
 import java.io.IOException;
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
 import java.security.Key;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class RequestSigner {
 
     private static final String SIGNATURE_ALGORITHM = "rsa-sha256";
+    private static final List<String> REQUIRED_HEADERS = Arrays.asList("(request-target)", "date", "digest");
 
-    private static final Map<String, List<String>> REQUIRED_HEADERS;
-    static {
-        REQUIRED_HEADERS = new HashMap<>();
-        REQUIRED_HEADERS.put("get", Arrays.asList("(request-target)"));
-        REQUIRED_HEADERS.put("post", Arrays.asList("(request-target)"));
-        REQUIRED_HEADERS.put("put", Arrays.asList("(request-target)"));
-        REQUIRED_HEADERS.put("delete", Arrays.asList("(request-target)"));
-    }
     private final Signer signer;
 
-    public RequestSigner(String keyId, Key privateKey, String method) {
-        this.signer = buildSigner(keyId, privateKey, method);
+    public RequestSigner(String keyId, Key privateKey) {
+        this.signer = buildSigner(keyId, privateKey);
     }
 
-    protected Signer buildSigner(String keyId, Key privateKey, String method) {
-        final SignatureAuth signatureAuth = new SignatureAuth(keyId, SIGNATURE_ALGORITHM, REQUIRED_HEADERS.get(method.toLowerCase()));
+    protected Signer buildSigner(String keyId, Key privateKey) {
+        final SignatureAuth signatureAuth = new SignatureAuth(keyId, SIGNATURE_ALGORITHM, REQUIRED_HEADERS);
         return new Signer(privateKey, signatureAuth);
-    }
-
-    private List<String> lowercase(final List<String> headers) {
-        final List<String> list = new ArrayList<>(headers.size());
-        for (final String header : headers) {
-            list.add(header.toLowerCase());
-        }
-        return list;
     }
 
     public void signRequest(HttpRequestBase request) {
         final String method = request.getMethod().toLowerCase();
-        // nothing to sign for options
-        if (method.equals("options")) {
-            return;
-        }
-
         final String path = extractPath(request.getURI());
 
         if (!request.containsHeader("Date")) {
@@ -57,26 +36,10 @@ public class RequestSigner {
             request.addHeader("Date", now.toString());
         }
 
-        if (!request.containsHeader("Digest")) {
-            request.addHeader("Digest", generateDigest(""));
-        }
-
         final Map<String, String> headers = extractHeadersToSign(request);
         final String signature = this.calculateSignature(method, path, headers);
         //System.out.println("Signature: " + signature);
         request.setHeader("Authorization", signature);
-    }
-
-    private String generateDigest(final String msg) {
-        String digestStr = "";
-        try {
-            MessageDigest md = MessageDigest.getInstance("SHA-256");
-            byte[] digest = md.digest(msg.getBytes(StandardCharsets.UTF_8));
-            digestStr = new String(digest);
-        } catch (NoSuchAlgorithmException e ) {
-            System.err.println("Cannot find Algorithm: " + e);
-        }
-        return digestStr;
     }
 
     private static String extractPath(URI uri) {
@@ -89,7 +52,7 @@ public class RequestSigner {
     }
 
     private static Map<String, String> extractHeadersToSign(HttpRequestBase request) {
-        List<String> headersToSign = REQUIRED_HEADERS.get(request.getMethod().toLowerCase());
+        List<String> headersToSign = Arrays.asList(request.getAllHeaders()).stream().map(h -> h.getName()).collect(Collectors.toList());
         if (headersToSign == null) {
             throw new RuntimeException("Don't know how to sign method " + request.getMethod());
         }

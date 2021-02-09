@@ -27,18 +27,20 @@ public class HttpSignature {
             System.err.println("Exception on create ApiClient: " + e);
             System.exit(2);
         }
+        String payload = "";
+        if(args.length == 5) { payload = args[4]; }
         switch(httpMethod) {
             case GET:
-                apiClient.getMethod();
+                apiClient.getMethod(payload);
                 break;
             case POST:
-                apiClient.postMethod(args[4]);
+                apiClient.postMethod(payload);
                 break;
             case PUT:
-                apiClient.putMethod(args[4]);
+                apiClient.putMethod(payload);
                 break;
             case DELETE:
-                apiClient.deleteMethod();
+                apiClient.deleteMethod(payload);
                 break;
             default:
                 throw new IllegalArgumentException("This argument is not valid: " + httpMethod);
