@@ -9,14 +9,18 @@ Script to test the "http signature" authentication type to authorise its clients
 
 ### Requirements:
 
-* maven
 * java 1.8
+* maven (it's optional, because because you can use the maven wrapper)
 
 ### Generate JAR:
 
 Run this command:
 ```
 $ mvn clean package
+```
+or
+```
+$ ./mvnw clean package
 ```
 
 (There isn't a test suite. TODO Add)
