@@ -1,9 +1,0 @@
-/Users/lucavassallo/workspace/vassa/satispay-script/src/main/java/com/vassa/util/PrivateKeyUtil.java
-/Users/lucavassallo/workspace/vassa/satispay-script/src/main/java/com/vassa/security/RequestSigner.java
-/Users/lucavassallo/workspace/vassa/satispay-script/src/main/java/com/vassa/security/SignatureAuth.java
-/Users/lucavassallo/workspace/vassa/satispay-script/src/main/java/com/vassa/domain/Algorithm.java
-/Users/lucavassallo/workspace/vassa/satispay-script/src/main/java/com/vassa/client/HttpMethod.java
-/Users/lucavassallo/workspace/vassa/satispay-script/src/main/java/com/vassa/HttpSignature.java
-/Users/lucavassallo/workspace/vassa/satispay-script/src/main/java/com/vassa/security/Signatures.java
-/Users/lucavassallo/workspace/vassa/satispay-script/src/main/java/com/vassa/client/ApiClient.java
-/Users/lucavassallo/workspace/vassa/satispay-script/src/main/java/com/vassa/security/Signer.java
