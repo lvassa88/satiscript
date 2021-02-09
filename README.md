@@ -21,7 +21,7 @@ $ mvn clean package
 or
 ```
 $ ./mvnw clean package
-``
+```
 
 (There isn't a test suite. TODO Add)
 
